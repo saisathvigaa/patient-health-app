@@ -1,0 +1,86 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String
+  hashedPassword String
+  createdAt      DateTime  @default(now())
+  patients       Patient[]
+}
+
+model Patient {
+  id                String         @id @default(uuid())
+  userId            String
+  name              String
+  dateOfBirth       DateTime?
+  sex               String?
+  bloodGroup        String?
+  referringDoctor   String?
+  hospital          String?
+  createdAt         DateTime       @default(now())
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports           Report[]
+  prescriptions     Prescription[]
+}
+
+model Report {
+  id              String     @id @default(uuid())
+  patientId       String
+  reportDate      DateTime
+  labName         String?
+  billId          String?
+  originalFileUrl String?
+  reportType      String?
+  status          String     @default("pending")
+  createdAt       DateTime   @default(now())
+  patient         Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labValues       LabValue[]
+}
+
+model LabValue {
+  id            String  @id @default(uuid())
+  reportId      String
+  testName      String
+  testCategory  String?
+  valueNumeric  Float?
+  valueText     String?
+  unit          String?
+  refLow        Float?
+  refHigh       Float?
+  flag          String?
+  note          String?
+  ocrConfidence Float?
+  userVerified  Boolean @default(false)
+  report        Report  @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model Prescription {
+  id               String       @id @default(uuid())
+  patientId        String
+  prescriptionDate DateTime
+  doctor           String?
+  hospital         String?
+  originalFileUrl  String?
+  createdAt        DateTime     @default(now())
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medications      Medication[]
+}
+
+model Medication {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  name           String
+  dosage         String?
+  frequency      String?
+  duration       String?
+  notes          String?
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+}
