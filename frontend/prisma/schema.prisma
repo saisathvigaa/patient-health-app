@@ -1,10 +1,11 @@
 generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["driverAdapters"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {
@@ -17,18 +18,18 @@ model User {
 }
 
 model Patient {
-  id                String         @id @default(uuid())
-  userId            String
-  name              String
-  dateOfBirth       DateTime?
-  sex               String?
-  bloodGroup        String?
-  referringDoctor   String?
-  hospital          String?
-  createdAt         DateTime       @default(now())
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  reports           Report[]
-  prescriptions     Prescription[]
+  id              String         @id @default(uuid())
+  userId          String
+  name            String
+  dateOfBirth     DateTime?
+  sex             String?
+  bloodGroup      String?
+  referringDoctor String?
+  hospital        String?
+  createdAt       DateTime       @default(now())
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports         Report[]
+  prescriptions   Prescription[]
 }
 
 model Report {
