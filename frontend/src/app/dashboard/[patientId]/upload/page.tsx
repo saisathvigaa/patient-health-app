@@ -49,10 +49,10 @@ export default function UploadPage() {
       setStatus("processing");
       const report = await api.uploadReport(patientId, file, reportDate);
       setStatus("done");
-      // Wait a moment then redirect to dashboard
+      // Redirect to report review page to see extracted values
       setTimeout(() => {
-        router.push(`/dashboard/${patientId}`);
-      }, 2000);
+        router.push(`/dashboard/${patientId}/reports/${report.id}`);
+      }, 1500);
     } catch (err: any) {
       setStatus("error");
       setError(err.message || "Upload failed. Please try again.");
@@ -179,7 +179,7 @@ export default function UploadPage() {
           }}>
             <Check size={20} style={{ color: "var(--success)" }} />
             <span style={{ color: "var(--success)", fontWeight: 600 }}>
-              Report uploaded successfully! Redirecting to dashboard...
+              Report uploaded successfully! Redirecting...
             </span>
           </div>
         )}
