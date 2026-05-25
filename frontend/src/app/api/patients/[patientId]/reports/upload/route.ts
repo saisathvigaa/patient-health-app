@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getUserFromRequest, unauthorized } from "@/lib/auth";
-import Anthropic from "@anthropic-ai/sdk";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const SYSTEM_PROMPT = `You are a medical lab report parser. Extract all lab test values from the report.
 Return ONLY a valid JSON object with this exact structure (no markdown, no explanation):
@@ -31,60 +31,41 @@ Rules:
 - Extract every single test listed in the report
 - For flag: H = above high ref, L = below low ref, N = within range, null = unknown
 - Infer flag from value vs reference range if not explicitly stated
-- test_category should group tests logically (e.g. Haemoglobin -> CBC, Creatinine -> Kidney Function)`;
+- test_category should group tests logically (e.g. Haemoglobin → CBC, Creatinine → Kidney Function)`;
 
-async function parseWithClaude(
+async function parseWithGemini(
   buffer: Buffer,
   mimeType: string,
   isPdf: boolean,
   pdfText?: string
 ): Promise<any> {
-  let messages: Anthropic.MessageParam[];
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+  let result;
 
   if (isPdf && pdfText) {
     const truncatedText = pdfText.slice(0, 15000);
-    messages = [
-      {
-        role: "user",
-        content: `Extract all lab values from this medical report:\n\n${truncatedText}`,
-      },
-    ];
+    result = await model.generateContent([
+      SYSTEM_PROMPT,
+      `Extract all lab values from this medical report:\n\n${truncatedText}`,
+    ]);
   } else {
     const validMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-    const safeMime = validMimeTypes.includes(mimeType)
-      ? (mimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp")
-      : "image/jpeg";
+    const safeMime = validMimeTypes.includes(mimeType) ? mimeType : "image/jpeg";
 
-    messages = [
+    result = await model.generateContent([
+      SYSTEM_PROMPT,
       {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: safeMime,
-              data: buffer.toString("base64"),
-            },
-          },
-          {
-            type: "text",
-            text: "Extract all lab values from this medical report image.",
-          },
-        ],
+        inlineData: {
+          data: buffer.toString("base64"),
+          mimeType: safeMime,
+        },
       },
-    ];
+      "Extract all lab values from this medical report image.",
+    ]);
   }
 
-  const response = await anthropic.messages.create({
-    model: "claude-haiku-4-5-20251001",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages,
-  });
-
-  const rawText =
-    response.content[0].type === "text" ? response.content[0].text : "{}";
+  const rawText = result.response.text();
 
   const cleaned = rawText
     .replace(/```json\s*/gi, "")
@@ -92,7 +73,7 @@ async function parseWithClaude(
     .trim();
 
   const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("No JSON found in Claude response");
+  if (!jsonMatch) throw new Error("No JSON found in Gemini response");
 
   return JSON.parse(jsonMatch[0]);
 }
@@ -139,9 +120,9 @@ export async function POST(
 
     let parsed: any = { lab_name: null, bill_id: null, report_type: "Blood Test", lab_values: [] };
     try {
-      parsed = await parseWithClaude(buffer, mimeType, isPdf, pdfText);
+      parsed = await parseWithGemini(buffer, mimeType, isPdf, pdfText);
     } catch (aiErr: any) {
-      console.error("Claude parse error:", aiErr);
+      console.error("Gemini parse error:", aiErr);
     }
 
     const labValues: any[] = Array.isArray(parsed.lab_values) ? parsed.lab_values : [];
@@ -207,4 +188,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+        }
