@@ -4,8 +4,8 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url       = env("DIRECT_DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {
@@ -14,46 +14,41 @@ model User {
   name           String
   hashedPassword String
   createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
   patients       Patient[]
 }
 
 model Patient {
-  id              String    @id @default(uuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  name            String
-  dateOfBirth     DateTime?
-  sex             String?
-  gender          String?
-  bloodGroup      String?
-  referringDoctor String?
-  hospital        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  reports         Report[]
+  id                String         @id @default(uuid())
+  userId            String
+  name              String
+  dateOfBirth       DateTime?
+  sex               String?
+  bloodGroup        String?
+  referringDoctor   String?
+  hospital          String?
+  createdAt         DateTime       @default(now())
+  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reports           Report[]
+  prescriptions     Prescription[]
 }
 
 model Report {
-  id            String         @id @default(uuid())
-  patientId     String
-  patient       Patient        @relation(fields: [patientId], references: [id])
-  reportDate    DateTime
-  labName       String?
-  billId        String?
-  reportType    String?
-  status        String?        @default("completed")
-  notes         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  labValues     LabValue[]
-  prescriptions Prescription[]
+  id              String     @id @default(uuid())
+  patientId       String
+  reportDate      DateTime
+  labName         String?
+  billId          String?
+  originalFileUrl String?
+  reportType      String?
+  status          String     @default("pending")
+  createdAt       DateTime   @default(now())
+  patient         Patient    @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  labValues       LabValue[]
 }
 
 model LabValue {
   id            String  @id @default(uuid())
   reportId      String
-  report        Report  @relation(fields: [reportId], references: [id])
   testName      String
   testCategory  String?
   valueNumeric  Float?
@@ -65,23 +60,28 @@ model LabValue {
   note          String?
   ocrConfidence Float?
   userVerified  Boolean @default(false)
+  report        Report  @relation(fields: [reportId], references: [id], onDelete: Cascade)
 }
 
 model Prescription {
-  id          String       @id @default(uuid())
-  reportId    String
-  report      Report       @relation(fields: [reportId], references: [id])
-  doctorName  String?
-  notes       String?
-  createdAt   DateTime     @default(now())
-  medications Medication[]
+  id               String       @id @default(uuid())
+  patientId        String
+  prescriptionDate DateTime
+  doctor           String?
+  hospital         String?
+  originalFileUrl  String?
+  createdAt        DateTime     @default(now())
+  patient          Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medications      Medication[]
 }
 
 model Medication {
   id             String       @id @default(uuid())
   prescriptionId String
-  prescription   Prescription @relation(fields: [prescriptionId], references: [id])
   name           String
   dosage         String?
   frequency      String?
+  duration       String?
+  notes          String?
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
 }
