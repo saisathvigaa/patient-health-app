@@ -34,7 +34,6 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
 
-    // Don't set Content-Type for FormData (browser will set multipart boundary)
     if (!(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
@@ -54,6 +53,12 @@ class ApiClient {
   }
 
   // ─── Auth ───
+  async loginDemo(): Promise<AuthResponse> {
+    const data = await this.request<AuthResponse>('/api/auth/demo', { method: 'POST' });
+    this.setToken(data.access_token);
+    return data;
+  }
+
   async register(email: string, name: string, password: string): Promise<AuthResponse> {
     const data = await this.request<AuthResponse>('/api/auth/register', {
       method: 'POST',
