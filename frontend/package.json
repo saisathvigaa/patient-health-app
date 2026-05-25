@@ -10,7 +10,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.39.0",
+    "@google/generative-ai": "^0.24.0",
     "@prisma/client": "5.22.0",
     "@prisma/extension-accelerate": "^2.0.1",
     "bcryptjs": "^3.0.3",
@@ -32,7 +32,6 @@
     "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
-    "@types/pdf-parse": "^1.1.4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
