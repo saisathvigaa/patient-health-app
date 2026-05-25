@@ -1,10 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Activity, Upload, Shield, TrendingUp, ChevronRight } from "lucide-react";
+import { Activity, Upload, Shield, TrendingUp, ChevronRight, Zap } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function HomePage() {
   const router = useRouter();
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  const handleTryDemo = async () => {
+    setDemoLoading(true);
+    try {
+      await api.loginDemo();
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("Demo login failed", err);
+    } finally {
+      setDemoLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen" style={{ background: "var(--bg-primary)" }}>
@@ -23,6 +38,12 @@ export default function HomePage() {
           <span style={{ fontSize: "1.25rem", fontWeight: 700 }}>HealthTrack</span>
         </div>
         <div style={{ display: "flex", gap: "0.75rem" }}>
+          <button className="btn btn-outline" onClick={handleTryDemo} disabled={demoLoading}
+            style={{ background: "rgba(99,102,241,0.08)", borderColor: "var(--accent)", color: "var(--accent)" }}
+          >
+            <Zap size={16} />
+            {demoLoading ? "Loading..." : "Try Demo"}
+          </button>
           <button className="btn btn-outline" onClick={() => router.push("/login")}>
             Sign In
           </button>
@@ -55,14 +76,25 @@ export default function HomePage() {
           Upload your lab report PDF or photo. We&apos;ll extract the values, track trends
           over time, and show you a beautiful dashboard — just like your doctor sees.
         </p>
-        <button
-          className="btn btn-primary"
-          style={{ fontSize: "1.1rem", padding: "1rem 2.5rem" }}
-          onClick={() => router.push("/login?tab=register")}
-        >
-          Start Tracking — It&apos;s Free
-          <ChevronRight size={20} />
-        </button>
+        <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
+          <button
+            className="btn btn-primary"
+            style={{ fontSize: "1.1rem", padding: "1rem 2.5rem" }}
+            onClick={handleTryDemo}
+            disabled={demoLoading}
+          >
+            <Zap size={20} />
+            {demoLoading ? "Loading demo..." : "Try Demo — Instant Access"}
+          </button>
+          <button
+            className="btn btn-outline"
+            style={{ fontSize: "1.1rem", padding: "1rem 2.5rem" }}
+            onClick={() => router.push("/login?tab=register")}
+          >
+            Create Free Account
+            <ChevronRight size={20} />
+          </button>
+        </div>
       </section>
 
       {/* Features */}
@@ -112,4 +144,4 @@ export default function HomePage() {
       </footer>
     </div>
   );
-}
+      }
